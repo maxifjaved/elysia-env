@@ -1,0 +1,64 @@
+{
+  "name": "@maxifjaved/elysia-env",
+  "version": "1.0.0",
+  "description": "Type-safe environment variable validation for Elysia.js - feels native, works beautifully",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": {
+      "bun": "./index.ts",
+      "import": "./index.ts",
+      "types": "./index.ts",
+      "default": "./index.ts"
+    }
+  },
+  "files": [
+    "index.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "prepublishOnly": "echo '📦 Publishing @maxifjaved/elysia-env v${npm_package_version}...'"
+  },
+  "keywords": [
+    "elysia",
+    "elysiajs",
+    "env",
+    "environment",
+    "validation",
+    "typebox",
+    "typescript",
+    "type-safe",
+    "bun",
+    "configuration",
+    "config",
+    "plugin"
+  ],
+  "author": {
+    "name": "Maxif Javed",
+    "url": "https://www.npmjs.com/~maxifjaved"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maxifjaved/elysia-env.git"
+  },
+  "bugs": {
+    "url": "https://github.com/maxifjaved/elysia-env/issues"
+  },
+  "homepage": "https://github.com/maxifjaved/elysia-env#readme",
+  "peerDependencies": {
+    "@sinclair/typebox": ">=0.32.0",
+    "elysia": ">=1.0.0"
+  },
+  "devDependencies": {
+    "@sinclair/typebox": "^0.34.41",
+    "elysia": "^1.3.0",
+    "typescript": "^5.8.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
+  }
+}
