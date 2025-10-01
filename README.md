@@ -32,7 +32,7 @@ import { env } from '@maxifjaved/elysia-env'
 
 new Elysia()
   .use(env({
-    PORT: t.Numeric({ default: 3000 }),
+    PORT: t.Number({ default: 3000 }),
     API_KEY: t.String({ minLength: 10 }),
     NODE_ENV: t.Enum(
       { development: 'development', production: 'production' },
@@ -66,23 +66,19 @@ app.get('/config', ({ env }) => {
 ```ts
 // process.env = { PORT: "3000", ENABLED: "true" }
 
-const envPlugin = createEnv(
-  t.Object({
-    PORT: t.Numeric(),       // Converts "3000" → 3000
-    ENABLED: t.Boolean()     // Converts "true" → true
-  })
-);
+const envPlugin = env({
+  PORT: t.Number(),        // Converts "3000" → 3000
+  ENABLED: t.Boolean()     // Converts "true" → true
+});
 ```
 
 ### 🎨 Default Values
 
 ```ts
-const envPlugin = createEnv(
-  t.Object({
-    PORT: t.Numeric({ default: 3000 }),
-    LOG_LEVEL: t.String({ default: 'info' })
-  })
-);
+const envPlugin = env({
+  PORT: t.Number({ default: 3000 }),
+  LOG_LEVEL: t.String({ default: 'info' })
+});
 // No need for t.Optional!
 ```
 
@@ -95,19 +91,16 @@ const envPlugin = createEnv(
 //   OTHER_VAR: 'ignored'
 // }
 
-const envPlugin = createEnv(
-  t.Object({
-    API_KEY: t.String(),    // Reads APP_API_KEY
-    DB_URL: t.String()       // Reads APP_DB_URL
-  }),
-  { prefix: 'APP_' }
-);
+const envPlugin = env({
+  API_KEY: t.String(),    // Reads APP_API_KEY
+  DB_URL: t.String()       // Reads APP_DB_URL
+}, { prefix: 'APP_' });
 ```
 
 ### 🚨 Custom Error Handling
 
 ```ts
-createEnv(schema, {
+env(schema, {
   onError: (errors) => {
     logToSentry(errors);
     throw new Error('Invalid environment configuration');
@@ -115,15 +108,15 @@ createEnv(schema, {
 });
 
 // Or use built-in modes:
-createEnv(schema, { onError: 'exit' });   // Default: log and exit(1)
-createEnv(schema, { onError: 'warn' });   // Log warning and continue
-createEnv(schema, { onError: 'silent' }); // Silent failure
+env(schema, { onError: 'exit' });   // Default: log and exit(1)
+env(schema, { onError: 'warn' });   // Log warning and continue
+env(schema, { onError: 'silent' }); // Silent failure
 ```
 
 ### ✅ Success Callbacks
 
 ```ts
-createEnv(schema, {
+env(schema, {
   onSuccess: (env) => {
     console.log(`✅ Config loaded for ${env.APP_NAME}`);
     trackAnalytics({ environment: env.NODE_ENV });
@@ -134,28 +127,27 @@ createEnv(schema, {
 ### 🧪 Testing with Custom Sources
 
 ```ts
-const testEnv = createEnv(
-  schema,
-  {
-    source: {
-      API_KEY: 'test-key',
-      PORT: '8080'
-    }
+const testEnv = env(schema, {
+  source: {
+    API_KEY: 'test-key',
+    PORT: '8080'
   }
-);
+});
 ```
 
 ## API Reference
 
-### `createEnv<T>(schema, options?)`
+### `env<T>(variables, options?)`
 
 Creates an Elysia plugin that validates and injects environment variables.
 
 **Parameters:**
-- `schema`: `TObject<T>` - TypeBox object schema defining your environment variables
+- `variables`: `T extends TProperties` - TypeBox schema properties (no need for `t.Object` wrapper!)
 - `options?`: `EnvOptions<T>` - Optional configuration
 
 **Returns:** `Elysia` plugin with validated env in context
+
+**Alias:** `createEnv` - available for those who prefer explicit naming
 
 ### `EnvOptions<T>`
 
@@ -172,17 +164,17 @@ Creates an Elysia plugin that validates and injects environment variables.
 
 ```ts
 import { Elysia, t } from 'elysia';
-import { createEnv } from '@maxifjaved/elysia-env';
+import { env } from '@maxifjaved/elysia-env';
 
-// Define your schema
-const envPlugin = createEnv(
-  t.Object({
+// Use in your app - clean and simple!
+const app = new Elysia()
+  .use(env({
     // Required
     DATABASE_URL: t.String({ format: 'uri' }),
     API_SECRET: t.String({ minLength: 32 }),
 
     // With defaults
-    PORT: t.Numeric({ default: 3000, minimum: 1, maximum: 65535 }),
+    PORT: t.Number({ default: 3000, minimum: 1, maximum: 65535 }),
     NODE_ENV: t.Enum(
       { development: 'development', production: 'production', test: 'test' },
       { default: 'development' }
@@ -194,8 +186,7 @@ const envPlugin = createEnv(
       [t.Literal('debug'), t.Literal('info'), t.Literal('warn'), t.Literal('error')],
       { default: 'info' }
     )
-  }),
-  {
+  }, {
     onSuccess: (env) => {
       console.log(`🚀 Server starting on port ${env.PORT}`);
     },
@@ -203,12 +194,7 @@ const envPlugin = createEnv(
       console.error('Environment validation failed:', errors);
       process.exit(1);
     }
-  }
-);
-
-// Use in your app
-const app = new Elysia()
-  .use(envPlugin)
+  }))
   .get('/health', ({ env }) => ({
     status: 'ok',
     environment: env.NODE_ENV,
@@ -242,13 +228,14 @@ export type Env = typeof app extends Elysia<infer E>
 Common schema patterns for environment variables:
 
 ```ts
-t.Object({
+// Pass properties directly - no t.Object() wrapper needed!
+env({
   // Strings
   API_KEY: t.String({ minLength: 10 }),
   DATABASE_URL: t.String({ format: 'uri' }),
 
-  // Numbers
-  PORT: t.Numeric({ minimum: 1, maximum: 65535 }),
+  // Numbers (use t.Number, not t.Numeric!)
+  PORT: t.Number({ default: 3000, minimum: 1, maximum: 65535 }),
   TIMEOUT_MS: t.Number({ default: 5000 }),
 
   // Booleans

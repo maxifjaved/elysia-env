@@ -142,13 +142,17 @@ export function env<T extends TProperties>(
     );
   }
 
-  // Apply type conversion and defaults
-  const converted = Value.Convert(schema, processedSource);
-  const withDefaults = Value.Default(schema, converted);
+  // Apply transformations using Value.Parse (like @yolk-oss/elysia-env)
+  // Order: Clean → Default → Decode → Convert
+  const processed = Value.Parse(
+    ['Clean', 'Default', 'Decode', 'Convert'],
+    schema,
+    processedSource,
+  );
 
   // Validate against schema
-  if (!Value.Check(schema, withDefaults)) {
-    const errors = [...Value.Errors(schema, withDefaults)].reduce(
+  if (!Value.Check(schema, processed)) {
+    const errors = [...Value.Errors(schema, processed)].reduce(
       (acc, e) => {
         const path = e.path.substring(1) || "root";
         acc[path] = e.message;
@@ -177,12 +181,12 @@ export function env<T extends TProperties>(
     }
   } else {
     // Call success callback if validation passed
-    onSuccess?.(withDefaults as Static<TObject<T>>);
+    onSuccess?.(processed as Static<TObject<T>>);
   }
 
   return new Elysia({ name: "env" }).decorate(
     "env",
-    withDefaults as Static<typeof schema>,
+    processed as Static<typeof schema>,
   );
 }
 
