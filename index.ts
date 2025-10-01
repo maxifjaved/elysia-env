@@ -119,75 +119,76 @@ export function env<T extends TProperties>(
   variables: T,
   options: EnvOptions<T> = {},
 ) {
-  const schema = t.Object(variables);
-  const {
-    source = process.env,
-    prefix,
-    onError = "exit",
-    onSuccess,
-  } = options;
+  return new Elysia({ name: "env" }).decorate(() => {
+    const schema = t.Object(variables);
+    const {
+      source = process.env,
+      prefix,
+      onError = "exit",
+      onSuccess,
+    } = options;
 
-  // Apply prefix filtering if specified
-  let processedSource = source;
-  if (prefix) {
-    processedSource = Object.entries(source).reduce(
-      (acc, [key, value]) => {
-        if (key.startsWith(prefix)) {
-          const newKey = key.substring(prefix.length);
-          acc[newKey] = value;
-        }
-        return acc;
-      },
-      {} as Record<string, unknown>,
-    );
-  }
-
-  // Apply transformations using Value.Parse (like @yolk-oss/elysia-env)
-  // Order: Clean → Default → Decode → Convert
-  const processed = Value.Parse(
-    ['Clean', 'Default', 'Decode', 'Convert'],
-    schema,
-    processedSource,
-  );
-
-  // Validate against schema
-  if (!Value.Check(schema, processed)) {
-    const errors = [...Value.Errors(schema, processed)].reduce(
-      (acc, e) => {
-        const path = e.path.substring(1) || "root";
-        acc[path] = e.message;
-        return acc;
-      },
-      {} as Record<string, string>,
-    );
-
-    if (typeof onError === "function") {
-      onError(errors);
-    } else {
-      const errorMessage = Object.entries(errors)
-        .map(([key, msg]) => `  - ${key}: ${msg}`)
-        .join("\n");
-
-      switch (onError) {
-        case "exit":
-          console.error(`❌ Invalid environment variables:\n${errorMessage}`);
-          process.exit(1);
-        case "warn":
-          console.warn(`⚠️  Invalid environment variables:\n${errorMessage}`);
-          break;
-        case "silent":
-          break;
-      }
+    // Apply prefix filtering if specified
+    let processedSource = source;
+    if (prefix) {
+      processedSource = Object.entries(source).reduce(
+        (acc, [key, value]) => {
+          if (key.startsWith(prefix)) {
+            const newKey = key.substring(prefix.length);
+            acc[newKey] = value;
+          }
+          return acc;
+        },
+        {} as Record<string, unknown>,
+      );
     }
-  } else {
-    // Call success callback if validation passed
-    onSuccess?.(processed as Static<TObject<T>>);
-  }
 
-  return new Elysia({ name: "env" }).decorate(
-    "env",
-    processed as Static<typeof schema>,
-  );
+    // Apply transformations using Value.Parse (like @yolk-oss/elysia-env)
+    // Order: Clean → Default → Decode → Convert
+    const processed = Value.Parse(
+      ['Clean', 'Default', 'Decode', 'Convert'],
+      schema,
+      processedSource,
+    );
+
+    // Validate against schema
+    if (!Value.Check(schema, processed)) {
+      const errors = [...Value.Errors(schema, processed)].reduce(
+        (acc, e) => {
+          const path = e.path.substring(1) || "root";
+          acc[path] = e.message;
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
+
+      if (typeof onError === "function") {
+        onError(errors);
+      } else {
+        const errorMessage = Object.entries(errors)
+          .map(([key, msg]) => `  - ${key}: ${msg}`)
+          .join("\n");
+
+        switch (onError) {
+          case "exit":
+            console.error(`❌ Invalid environment variables:\n${errorMessage}`);
+            process.exit(1);
+          case "warn":
+            console.warn(`⚠️  Invalid environment variables:\n${errorMessage}`);
+            break;
+          case "silent":
+            break;
+        }
+      }
+    } else {
+      // Call success callback if validation passed
+      onSuccess?.(processed as Static<TObject<T>>);
+    }
+
+    return {
+      env: processed as Static<typeof schema>,
+    };
+  });
 }
 
 // Keep createEnv as alias for those who prefer explicit naming
