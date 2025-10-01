@@ -135,6 +135,43 @@ const testEnv = env(schema, {
 });
 ```
 
+### 🔌 Dynamic Port Configuration
+
+Need to use validated env values before `.listen()`? Store the plugin in a variable:
+
+```ts
+import { Elysia, t } from 'elysia';
+import { env } from '@maxifjaved/elysia-env';
+
+const app = new Elysia();
+
+// Store the env plugin to access validated values
+const envPlugin = env({
+  PORT: t.Number({ default: 3000 }),
+  API_KEY: t.String()
+});
+
+app.use(envPlugin);
+
+// Access validated PORT (converted to number!)
+const port = (envPlugin.decorator as any).env.PORT;
+
+app.listen(port, (server) => {
+  console.log(`Server running on ${server.hostname}:${server.port}`);
+});
+```
+
+**Why this works:**
+- The `env()` plugin validates and decorates immediately when created
+- Storing it in a variable lets you access `.decorator.env` before `.listen()`
+- The PORT is properly type-converted (string "3000" → number 3000)
+
+**Note:** The `env` decorator is available in route handlers without this pattern:
+
+```ts
+app.get('/', ({ env }) => env.PORT)  // ✅ Works directly in routes
+```
+
 ## API Reference
 
 ### `env<T>(variables, options?)`
