@@ -1,6 +1,6 @@
 {
   "name": "@maxifjaved/elysia-env",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Type-safe environment variable validation for Elysia.js - feels native, works beautifully",
   "type": "module",
   "main": "./index.ts",
@@ -36,7 +36,7 @@
     "plugin"
   ],
   "author": {
-    "name": "Maxif Javed",
+    "name": "maxifjaved",
     "url": "https://www.npmjs.com/~maxifjaved"
   },
   "license": "MIT",
