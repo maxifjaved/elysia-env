@@ -1,6 +1,6 @@
 {
   "name": "@maxifjaved/elysia-env",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Type-safe environment variable validation for Elysia.js - feels native, works beautifully",
   "type": "module",
   "main": "./index.ts",

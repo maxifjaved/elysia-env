@@ -53,17 +53,40 @@ const app = new Elysia()
 
 ### Dynamic Port Configuration
 
+For proper TypeScript type inference, use one of these patterns:
+
+**Pattern 1: Inline usage (Recommended - Best type inference)**
+```ts
+const app = new Elysia()
+  .use(env({
+    PORT: t.Number({ default: 3000 }),
+    API_KEY: t.String(),
+  }))
+  .get("/", ({ env }) => env.API_KEY); // ✅ Fully typed!
+
+// Access from app instance after using the plugin
+const port = app.decorator.env.PORT;
+app.listen(port);
+```
+
+**Pattern 2: Store plugin in variable**
 ```ts
 const envPlugin = env({
   PORT: t.Number({ default: 3000 }),
+  API_KEY: t.String(),
 });
 
-app.use(envPlugin);
+// Apply plugin using .use() - this enables type inference
+const app = new Elysia().use(envPlugin);
 
-// Access validated values before .listen()
-const port = (envPlugin.decorator as any).env.PORT;
+app.get("/", ({ env }) => env.API_KEY); // ✅ Fully typed!
+
+// Access validated values
+const port = envPlugin.decorator.env.PORT;
 app.listen(port);
 ```
+
+> **Note:** Always call `.use()` on a new Elysia instance to ensure proper TypeScript type inference. Avoid storing the app instance before applying the plugin.
 
 ### Options
 
@@ -134,6 +157,52 @@ env({
 **Returns:** Elysia plugin with validated `env` in context
 
 **Alias:** `createEnv` available for explicit naming
+
+## Troubleshooting
+
+### TypeScript Error: "Property 'env' does not exist"
+
+If you see this error in your route handlers:
+
+```
+Property 'env' does not exist on type '{ body: unknown; query: ...'
+```
+
+**Solution:** Make sure you're using `.use()` to apply the plugin:
+
+```ts
+// ❌ Wrong - creates app before plugin
+const app = new Elysia();
+const envPlugin = env({ PORT: t.Number() });
+app.use(envPlugin);
+app.get("/", ({ env }) => env.PORT); // TypeScript error!
+
+// ✅ Correct - use plugin inline or on new instance
+const app = new Elysia().use(env({
+  PORT: t.Number()
+}));
+app.get("/", ({ env }) => env.PORT); // Works!
+
+// ✅ Also correct - store plugin, then use on new instance
+const envPlugin = env({ PORT: t.Number() });
+const app = new Elysia().use(envPlugin);
+app.get("/", ({ env }) => env.PORT); // Works!
+```
+
+### Using t.Enum for String Unions
+
+TypeBox doesn't have the same `t.Enum()` API as Elysia. Use `t.Union()` with `t.Literal()`:
+
+```ts
+// ❌ Wrong
+NODE_ENV: t.Enum({ development: "development", production: "production" })
+
+// ✅ Correct
+NODE_ENV: t.Union([
+  t.Literal("development"),
+  t.Literal("production")
+], { default: "development" })
+```
 
 ## License
 
