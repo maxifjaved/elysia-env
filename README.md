@@ -204,6 +204,82 @@ NODE_ENV: t.Union([
 ], { default: "development" })
 ```
 
+## Best Practices
+
+### Using Environment Variables in Models and Services
+
+When you need to access validated environment variables in Elysia models (like cookie secrets), services, or other module-level code, create a centralized `env.ts` file:
+
+**src/env.ts**
+```ts
+import { createEnv } from "@maxifjaved/elysia-env";
+import { t } from "elysia";
+
+// Create and export the plugin
+export const envPlugin = createEnv({
+  APP_NAME: t.String({ minLength: 1 }),
+  PORT: t.Number({ default: 3000 }),
+  SESSION_SECRET: t.String({ minLength: 32 }),
+  NODE_ENV: t.Enum(
+    { development: "development", production: "production" },
+    { default: "development" }
+  ),
+}, {
+  onSuccess: (env) => {
+    console.log(`📦 Environment loaded: ${env.APP_NAME}`);
+  },
+});
+
+// Export validated env for module-level access
+export const env = envPlugin.decorator.env;
+```
+
+**src/user.ts** - Using env in models
+```ts
+import { Elysia, t } from "elysia";
+import { env } from "./env";
+
+export const userService = new Elysia({ name: "user/service" })
+  .model({
+    session: t.Cookie({
+      token: t.Number(),
+    }, {
+      secrets: env.SESSION_SECRET, // ✅ Type-safe, validated
+    }),
+  });
+```
+
+**src/index.ts** - Main application
+```ts
+import { Elysia } from "elysia";
+import { env, envPlugin } from "./env";
+import { user } from "./user";
+
+const app = new Elysia()
+  .use(envPlugin)
+  .use(user)
+  .get("/", ({ env }) => `Hello ${env.APP_NAME}`);
+
+// Use validated env for app.listen
+app.listen(env.PORT);
+```
+
+**Why this works:**
+- The env plugin validates synchronously during creation
+- `envPlugin.decorator.env` is immediately available at module-level
+- No need for factory patterns or passing env as parameters
+- Keeps validation centralized while allowing static access
+
+**Benefits:**
+- ✅ Single source of truth for environment configuration
+- ✅ Type-safe access everywhere (both in handlers and models)
+- ✅ No `process.env` usage - everything goes through validation
+- ✅ Works with Elysia's model system and cookie secrets
+- ✅ Clean separation of concerns
+
+**Real-world example:**
+See this pattern in action in a complete Elysia app: [maxifjaved/elysia-app](https://github.com/maxifjaved/elysia-app)
+
 ## License
 
 MIT © [maxifjaved](https://www.npmjs.com/~maxifjaved)
