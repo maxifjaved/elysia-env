@@ -129,7 +129,7 @@ export function env<T extends TProperties>(
     } = options;
 
     // Apply prefix filtering if specified
-    let processedSource = source;
+    let processedSource = Object.assign({}, source);
     if (prefix) {
       processedSource = Object.entries(source).reduce(
         (acc, [key, value]) => {
